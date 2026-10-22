@@ -1,0 +1,77 @@
+type Query {
+    account(id: ID!): Account
+    allAccounts: [Account!]!
+    recentTransactions(limit: Int): [JournalTransaction!]!
+    pendingMakerCheckerQueue: [JournalTransaction!]!
+    auditLogs(limit: Int): [AuditLogEntry!]!
+}
+
+type Mutation {
+    createAccount(input: CreateAccountInput!): Account!
+    initiateTransfer(input: TransferInput!): TransferPayload!
+    approveTransaction(transactionId: ID!, reviewerId: String!): TransferPayload!
+    rejectTransaction(transactionId: ID!, reviewerId: String!, reason: String!): TransferPayload!
+}
+
+type Account {
+    id: ID!
+    accountNumber: String!
+    name: String!
+    type: String!
+    status: String!
+    balance: Float!
+    currency: String!
+    createdAt: String!
+}
+
+type JournalTransaction {
+    id: ID!
+    transactionReference: String!
+    description: String!
+    amount: Float!
+    currency: String!
+    status: String!
+    riskScore: Float!
+    requiresApproval: Boolean!
+    createdAt: String!
+    entries: [LedgerEntry!]!
+}
+
+type LedgerEntry {
+    id: ID!
+    accountNumber: String!
+    entryType: String!
+    amount: Float!
+}
+
+type AuditLogEntry {
+    id: ID!
+    action: String!
+    principal: String!
+    ipAddress: String!
+    details: String!
+    timestamp: String!
+}
+
+type TransferPayload {
+    success: Boolean!
+    transactionReference: String!
+    status: String!
+    riskScore: Float!
+    message: String!
+}
+
+input CreateAccountInput {
+    name: String!
+    type: String!
+    initialBalance: Float!
+    currency: String!
+}
+
+input TransferInput {
+    sourceAccountNumber: String!
+    destinationAccountNumber: String!
+    amount: Float!
+    description: String!
+    idempotencyKey: String!
+}

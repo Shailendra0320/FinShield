@@ -1,0 +1,72 @@
+version: '3.8'
+
+services:
+  # MySQL Core Relational Store
+  mysql-ledger:
+    image: mysql:8.0
+    container_name: finshield-mysql
+    environment:
+      MYSQL_DATABASE: finshield_db
+      MYSQL_ROOT_PASSWORD: rootpassword
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+
+  # MongoDB Audit Log Store
+  mongodb:
+    image: mongo:6.0
+    container_name: finshield-mongo
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+
+  # Redis Distributed Idempotency & Rate Limiting
+  redis:
+    image: redis:7-alpine
+    container_name: finshield-redis
+    ports:
+      - "6379:6379"
+
+  # Python ML Fraud Sidecar
+  ml-service:
+    build:
+      context: ./ml-service
+    container_name: finshield-ml-service
+    ports:
+      - "8000:8000"
+    environment:
+      - OLLAMA_BASE_URL=http://host.docker.internal:11434
+
+  # Spring Boot Modular Monolith Backend
+  backend:
+    build:
+      context: ./backend
+    container_name: finshield-backend
+    depends_on:
+      - mysql-ledger
+      - redis
+      - ml-service
+    ports:
+      - "8080:8080"
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql-ledger:3306/finshield_db?useSSL=false&allowPublicKeyRetrieval=true
+      - SPRING_DATASOURCE_USERNAME=root
+      - SPRING_DATASOURCE_PASSWORD=rootpassword
+      - SPRING_DATA_REDIS_HOST=redis
+      - FINSHIELD_ML_FRAUD_SERVICE_URL=http://ml-service:8000
+
+  # React Frontend Dashboard
+  frontend:
+    build:
+      context: ./frontend
+    container_name: finshield-frontend
+    depends_on:
+      - backend
+    ports:
+      - "3000:80"
+
+volumes:
+  mysql_data:
+  mongo_data:
