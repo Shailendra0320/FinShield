@@ -1,0 +1,361 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FinShield | Enterprise Core Banking Dashboard</title>
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%2338bdf8'><path d='M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm0 10.99h7c-.53 4.12-3.28 7.79-7 8.94V12H5V6.3l7-3.11v8.8z'/></svg>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <style>
+    :root {
+      --bg-primary: #090d16;
+      --bg-card: rgba(15, 23, 42, 0.75);
+      --bg-card-border: rgba(56, 189, 248, 0.15);
+      --accent-blue: #38bdf8;
+      --accent-indigo: #6366f1;
+      --accent-green: #10b981;
+      --accent-red: #ef4444;
+      --accent-amber: #f59e0b;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --font-sans: 'Plus Jakarta Sans', system-ui, sans-serif;
+      --font-mono: 'JetBrains Mono', monospace;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background-color: var(--bg-primary);
+      color: var(--text-main);
+      font-family: var(--font-sans);
+      min-height: 100vh;
+      background-image: 
+        radial-gradient(at 0% 0%, rgba(99, 102, 241, 0.14) 0px, transparent 50%),
+        radial-gradient(at 100% 100%, rgba(56, 189, 248, 0.09) 0px, transparent 50%);
+      padding-bottom: 40px;
+    }
+    .mono { font-family: var(--font-mono); }
+    .glass-card {
+      background: var(--bg-card);
+      backdrop-filter: blur(16px);
+      border: 1px solid var(--bg-card-border);
+      border-radius: 14px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+      transition: transform 0.2s ease, border-color 0.2s ease;
+    }
+    .glass-card:hover { border-color: rgba(56, 189, 248, 0.35); }
+    .btn-primary {
+      background: linear-gradient(135deg, #38bdf8 0%, #2563eb 100%);
+      color: #ffffff;
+      padding: 10px 20px;
+      border-radius: 8px;
+      border: none;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      box-shadow: 0 4px 14px rgba(37, 99, 235, 0.35);
+    }
+    .btn-primary:hover { filter: brightness(1.1); transform: translateY(-1px); }
+    .btn-secondary {
+      background: rgba(30, 41, 59, 0.8);
+      color: #e2e8f0;
+      padding: 10px 18px;
+      border-radius: 8px;
+      border: 1px solid rgba(148, 163, 184, 0.2);
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      padding: 4px 10px;
+      border-radius: 9999px;
+      font-size: 0.75rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .badge-asset { background: rgba(16, 185, 129, 0.15); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.3); }
+    .badge-liability { background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); }
+    .badge-income { background: rgba(139, 92, 246, 0.15); color: #a78bfa; border: 1px solid rgba(139, 92, 246, 0.3); }
+    .badge-pending { background: rgba(245, 158, 11, 0.15); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.3); }
+    .badge-approved { background: rgba(16, 185, 129, 0.15); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.3); }
+    .badge-rejected { background: rgba(239, 68, 68, 0.15); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.3); }
+    input, select {
+      background: rgba(15, 23, 42, 0.8);
+      border: 1px solid rgba(148, 163, 184, 0.25);
+      color: #f8fafc;
+      padding: 10px 14px;
+      border-radius: 8px;
+      width: 100%;
+      font-family: inherit;
+      font-size: 0.95rem;
+    }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+  <script type="text/babel">
+    const { useState } = React;
+
+    function App() {
+      const [activeTab, setActiveTab] = useState('overview');
+      const [accounts, setAccounts] = useState([
+        { id: 1, accountNumber: 'VAULT-1001', name: 'Central Reserve Vault (Asset)', type: 'ASSET', status: 'ACTIVE', balance: 10000000.0, currency: 'INR' },
+        { id: 2, accountNumber: 'ACC-2001', name: 'John Doe Savings Account', type: 'LIABILITY', status: 'ACTIVE', balance: 250000.0, currency: 'INR' },
+        { id: 3, accountNumber: 'ACC-2002', name: 'Alice Smith Checking Account', type: 'LIABILITY', status: 'ACTIVE', balance: 150000.0, currency: 'INR' },
+        { id: 4, accountNumber: 'FEE-3001', name: 'Transaction Processing Revenue', type: 'INCOME', status: 'ACTIVE', balance: 0.0, currency: 'INR' }
+      ]);
+
+      const [transactions, setTransactions] = useState([
+        { id: 1, transactionReference: 'TX-INIT-001', description: 'Central Liquidity Inflow', amount: 10000000.0, status: 'EXECUTED', riskScore: 0.02 }
+      ]);
+
+      const [pendingQueue, setPendingQueue] = useState([
+        { id: 201, transactionReference: 'TX-REV-8849', sourceAccountNumber: 'ACC-2001', destinationAccountNumber: 'ACC-2002', amount: 150000.0, riskScore: 0.72, reason: 'Statutory threshold exceeded (>= INR 1,00,000)' }
+      ]);
+
+      const [showModal, setShowModal] = useState(false);
+      const [form, setForm] = useState({ sourceAccountNumber: 'ACC-2001', destinationAccountNumber: 'ACC-2002', amount: '25000', description: 'Commercial Invoice Settlement' });
+      const [msg, setMsg] = useState(null);
+
+      const totalLiquidity = accounts.reduce((sum, a) => sum + a.balance, 0);
+
+      const handleTransfer = (e) => {
+        e.preventDefault();
+        const amt = parseFloat(form.amount);
+        if (!amt || amt <= 0) return;
+
+        if (amt >= 100000) {
+          setPendingQueue([{ id: Date.now(), transactionReference: 'TX-' + Math.random().toString(36).substring(2, 9).toUpperCase(), sourceAccountNumber: form.sourceAccountNumber, destinationAccountNumber: form.destinationAccountNumber, amount: amt, riskScore: 0.76, reason: 'High-Value Transfer: Maker-Checker hold triggered' }, ...pendingQueue]);
+          setMsg({ success: true, text: 'Transfer held in Maker-Checker queue for Compliance Officer sign-off.' });
+        } else {
+          setAccounts(accounts.map(a => {
+            if (a.accountNumber === form.sourceAccountNumber) return { ...a, balance: a.balance - amt };
+            if (a.accountNumber === form.destinationAccountNumber) return { ...a, balance: a.balance + amt };
+            return a;
+          }));
+          setTransactions([{ id: Date.now(), transactionReference: 'TX-' + Math.random().toString(36).substring(2, 9).toUpperCase(), description: form.description || 'Funds Transfer', amount: amt, status: 'EXECUTED', riskScore: 0.05 }, ...transactions]);
+          setMsg({ success: true, text: 'Atomic Double-Entry transfer successfully executed under ACID locking!' });
+        }
+        setTimeout(() => { setShowModal(false); setMsg(null); }, 1600);
+      };
+
+      const approveItem = (item) => {
+        setAccounts(accounts.map(a => {
+          if (a.accountNumber === item.sourceAccountNumber) return { ...a, balance: a.balance - item.amount };
+          if (a.accountNumber === item.destinationAccountNumber) return { ...a, balance: a.balance + item.amount };
+          return a;
+        }));
+        setTransactions([{ id: Date.now(), transactionReference: item.transactionReference, description: 'Maker-Checker Approved Transfer', amount: item.amount, status: 'APPROVED', riskScore: item.riskScore }, ...transactions]);
+        setPendingQueue(pendingQueue.filter(q => q.id !== item.id));
+      };
+
+      const rejectItem = (item) => {
+        setTransactions([{ id: Date.now(), transactionReference: item.transactionReference, description: 'Rejected by Compliance Officer', amount: item.amount, status: 'REJECTED', riskScore: item.riskScore }, ...transactions]);
+        setPendingQueue(pendingQueue.filter(q => q.id !== item.id));
+      };
+
+      return (
+        <div style={{ maxWidth: '1240px', margin: '0 auto', padding: '28px 16px' }}>
+          <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '32px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+              <div style={{ width: '44px', height: '44px', background: 'linear-gradient(135deg, #38bdf8, #2563eb)', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: '800', color: '#fff', fontSize: '1.2rem', boxShadow: '0 4px 14px rgba(56, 189, 248, 0.3)' }}>FS</div>
+              <div>
+                <h1 style={{ fontSize: '1.75rem', fontWeight: '800', letterSpacing: '-0.02em' }}>FinShield</h1>
+                <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>Enterprise Double-Entry Banking Ledger â€¢ Apache Fineract COA â€¢ AI Fraud Intelligence</p>
+              </div>
+            </div>
+            <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '6px 14px', borderRadius: '9999px', background: 'rgba(16, 185, 129, 0.1)', border: '1px solid rgba(16, 185, 129, 0.25)', fontSize: '0.8rem', color: '#34d399' }}>
+                <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#10b981', display: 'inline-block' }}></span>
+                Live React Environment
+              </div>
+              <button className="btn-primary" onClick={() => setShowModal(true)}>+ Initiate Transfer</button>
+            </div>
+          </header>
+
+          <nav style={{ display: 'flex', gap: '8px', borderBottom: '1px solid rgba(148, 163, 184, 0.15)', marginBottom: '28px', paddingBottom: '12px' }}>
+            {[
+              { id: 'overview', label: 'ðŸ“Š System Overview' },
+              { id: 'accounts', label: 'ðŸ¦ Chart of Accounts (COA)' },
+              { id: 'makerchecker', label: âš–ï¸ Maker-Checker Queue () },
+              { id: 'ledger', label: 'ðŸ“œ General Ledger Journal' }
+            ].map(tab => (
+              <button key={tab.id} onClick={() => setActiveTab(tab.id)} style={{ background: activeTab === tab.id ? 'rgba(56, 189, 248, 0.15)' : 'transparent', color: activeTab === tab.id ? 'var(--accent-blue)' : 'var(--text-muted)', border: activeTab === tab.id ? '1px solid rgba(56, 189, 248, 0.3)' : '1px solid transparent', padding: '9px 18px', borderRadius: '8px', cursor: 'pointer', fontWeight: '600', fontSize: '0.9rem' }}>
+                {tab.label}
+              </button>
+            ))}
+          </nav>
+
+          {activeTab === 'overview' && (
+            <div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '16px', marginBottom: '28px' }}>
+                <div className="glass-card" style={{ padding: '22px' }}>
+                  <div style={{ color: 'var(--text-muted)', fontSize: '0.85rem', marginBottom: '6px' }}>Total Ledger Liquidity</div>
+                  <div className="mono" style={{ fontSize: '1.85rem', fontWeight: '800', color: 'var(--accent-blue)' }}>INR {totalLiquidity.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</div>
+                  <div style={{ fontSize: '0.78rem', color: '#10b981', marginTop: '6px' }}>âœ“ Invariant: Debits â‰¡ Credits</div>
+                </div>
+                <div className="glass-card" style={{ padding: '22px' }}>
+                  <div style={{ color: 'var(--text-muted)', fontSize: '0.85rem', marginBottom: '6px' }}>Active Accounts</div>
+                  <div className="mono" style={{ fontSize: '1.85rem', fontWeight: '800' }}>{accounts.length}</div>
+                  <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: '6px' }}>Fineract 5-Tier Accounting COA</div>
+                </div>
+                <div className="glass-card" style={{ padding: '22px' }}>
+                  <div style={{ color: 'var(--text-muted)', fontSize: '0.85rem', marginBottom: '6px' }}>Maker-Checker Approvals</div>
+                  <div className="mono" style={{ fontSize: '1.85rem', fontWeight: '800', color: pendingQueue.length > 0 ? 'var(--accent-amber)' : 'var(--accent-green)' }}>{pendingQueue.length} Pending</div>
+                  <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: '6px' }}>Dual Control Threshold: INR 1,00,000</div>
+                </div>
+                <div className="glass-card" style={{ padding: '22px' }}>
+                  <div style={{ color: 'var(--text-muted)', fontSize: '0.85rem', marginBottom: '6px' }}>AI Anti-Fraud Sidecar</div>
+                  <div className="mono" style={{ fontSize: '1.85rem', fontWeight: '800', color: '#c084fc' }}>Active</div>
+                  <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: '6px' }}>Isolation Forest + Local Ollama / Gemini</div>
+                </div>
+              </div>
+
+              <h2 style={{ fontSize: '1.25rem', fontWeight: '700', marginBottom: '16px' }}>Core Banking Accounts</h2>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '16px' }}>
+                {accounts.map(acc => (
+                  <div key={acc.accountNumber} className="glass-card" style={{ padding: '20px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                      <span className="mono" style={{ fontSize: '0.85rem', color: 'var(--accent-blue)', fontWeight: '700' }}>{acc.accountNumber}</span>
+                      <span className={adge badge-}>{acc.type}</span>
+                    </div>
+                    <div style={{ fontWeight: '600', fontSize: '1.05rem', marginBottom: '10px' }}>{acc.name}</div>
+                    <div className="mono" style={{ fontSize: '1.5rem', fontWeight: '800' }}>INR {acc.balance.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</div>
+                    <div style={{ marginTop: '12px', fontSize: '0.75rem', color: 'var(--text-muted)' }}>Status: <span style={{ color: '#10b981' }}>{acc.status}</span></div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'accounts' && (
+            <div className="glass-card" style={{ padding: '24px' }}>
+              <h2 style={{ fontSize: '1.25rem', fontWeight: '700', marginBottom: '16px' }}>Apache Fineract Chart of Accounts (COA)</h2>
+              <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+                <thead>
+                  <tr style={{ borderBottom: '1px solid rgba(148, 163, 184, 0.2)', color: 'var(--text-muted)' }}>
+                    <th style={{ padding: '12px' }}>Account</th>
+                    <th style={{ padding: '12px' }}>Name</th>
+                    <th style={{ padding: '12px' }}>Category</th>
+                    <th style={{ padding: '12px' }}>Status</th>
+                    <th style={{ padding: '12px', textAlign: 'right' }}>Balance</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {accounts.map(a => (
+                    <tr key={a.accountNumber} style={{ borderBottom: '1px solid rgba(148, 163, 184, 0.1)' }}>
+                      <td className="mono" style={{ padding: '12px', color: 'var(--accent-blue)' }}>{a.accountNumber}</td>
+                      <td style={{ padding: '12px' }}>{a.name}</td>
+                      <td style={{ padding: '12px' }}><span className={adge badge-}>{a.type}</span></td>
+                      <td style={{ padding: '12px', color: '#10b981' }}>â— {a.status}</td>
+                      <td className="mono" style={{ padding: '12px', textAlign: 'right', fontWeight: '800' }}>INR {a.balance.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+
+          {activeTab === 'makerchecker' && (
+            <div className="glass-card" style={{ padding: '24px' }}>
+              <h2 style={{ fontSize: '1.25rem', fontWeight: '700', marginBottom: '16px' }}>Maker-Checker Dual Authorization Queue</h2>
+              {pendingQueue.length === 0 ? (
+                <div style={{ padding: '40px', textAlign: 'center', color: 'var(--text-muted)' }}>âœ“ No pending transactions.</div>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                  {pendingQueue.map(item => (
+                    <div key={item.id} className="glass-card" style={{ padding: '20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <div>
+                        <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginBottom: '6px' }}>
+                          <span className="mono" style={{ fontWeight: '700', color: 'var(--accent-blue)' }}>{item.transactionReference}</span>
+                          <span className="badge badge-pending">PENDING</span>
+                          <span className="badge badge-rejected">Risk: {item.riskScore}</span>
+                        </div>
+                        <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Route: {item.sourceAccountNumber} âž” {item.destinationAccountNumber}</div>
+                        <div style={{ fontSize: '0.8rem', color: 'var(--accent-amber)', marginTop: '4px' }}>{item.reason}</div>
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                        <div className="mono" style={{ fontSize: '1.4rem', fontWeight: '800' }}>INR {item.amount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</div>
+                        <button className="btn-primary" style={{ background: '#10b981' }} onClick={() => approveItem(item)}>Approve</button>
+                        <button className="btn-secondary" style={{ color: '#ef4444' }} onClick={() => rejectItem(item)}>Reject</button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {activeTab === 'ledger' && (
+            <div className="glass-card" style={{ padding: '24px' }}>
+              <h2 style={{ fontSize: '1.25rem', fontWeight: '700', marginBottom: '16px' }}>General Ledger Journal (Double-Entry Log)</h2>
+              <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+                <thead>
+                  <tr style={{ borderBottom: '1px solid rgba(148, 163, 184, 0.2)', color: 'var(--text-muted)' }}>
+                    <th style={{ padding: '12px' }}>Tx Reference</th>
+                    <th style={{ padding: '12px' }}>Description</th>
+                    <th style={{ padding: '12px' }}>Status</th>
+                    <th style={{ padding: '12px', textAlign: 'right' }}>Amount</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {transactions.map(t => (
+                    <tr key={t.id} style={{ borderBottom: '1px solid rgba(148, 163, 184, 0.1)' }}>
+                      <td className="mono" style={{ padding: '12px', color: 'var(--accent-blue)' }}>{t.transactionReference}</td>
+                      <td style={{ padding: '12px' }}>{t.description}</td>
+                      <td style={{ padding: '12px' }}><span className={adge badge-}>{t.status}</span></td>
+                      <td className="mono" style={{ padding: '12px', textAlign: 'right', fontWeight: '800' }}>INR {t.amount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+
+          {showModal && (
+            <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 50 }}>
+              <div className="glass-card" style={{ width: '100%', maxWidth: '480px', padding: '28px', background: '#0b1120' }}>
+                <h3 style={{ fontSize: '1.25rem', fontWeight: '700', marginBottom: '16px' }}>Execute Double-Entry Transfer</h3>
+                <form onSubmit={handleTransfer}>
+                  <div style={{ marginBottom: '12px' }}>
+                    <label style={{ display: 'block', fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '4px' }}>Source Account (Debit)</label>
+                    <select value={form.sourceAccountNumber} onChange={e => setForm({ ...form, sourceAccountNumber: e.target.value })}>
+                      {accounts.map(a => <option key={a.accountNumber} value={a.accountNumber}>{a.accountNumber} - {a.name} (Bal: INR {a.balance})</option>)}
+                    </select>
+                  </div>
+                  <div style={{ marginBottom: '12px' }}>
+                    <label style={{ display: 'block', fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '4px' }}>Destination Account (Credit)</label>
+                    <select value={form.destinationAccountNumber} onChange={e => setForm({ ...form, destinationAccountNumber: e.target.value })}>
+                      {accounts.map(a => <option key={a.accountNumber} value={a.accountNumber}>{a.accountNumber} - {a.name}</option>)}
+                    </select>
+                  </div>
+                  <div style={{ marginBottom: '12px' }}>
+                    <label style={{ display: 'block', fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '4px' }}>Amount (INR) (>= 1,00,000 triggers Maker-Checker)</label>
+                    <input type="number" step="0.01" value={form.amount} onChange={e => setForm({ ...form, amount: e.target.value })} required />
+                  </div>
+                  <div style={{ marginBottom: '18px' }}>
+                    <label style={{ display: 'block', fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '4px' }}>Description</label>
+                    <input type="text" value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} />
+                  </div>
+                  {msg && <div style={{ padding: '10px', borderRadius: '6px', marginBottom: '14px', background: msg.success ? 'rgba(16, 185, 129, 0.15)' : 'rgba(239, 68, 68, 0.15)', color: msg.success ? '#34d399' : '#f87171', fontSize: '0.85rem' }}>{msg.text}</div>}
+                  <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
+                    <button type="button" className="btn-secondary" onClick={() => setShowModal(false)}>Cancel</button>
+                    <button type="submit" className="btn-primary">Execute Transfer</button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+  </script>
+</body>
+</html>
